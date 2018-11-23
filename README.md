@@ -27,7 +27,7 @@ npm install wafer2-client-sdk --save
 
 安装scss
 npm install node-sass sass-loader --save 
-
+```
 
   // async created () {
     // qcloud.setLoginUrl(config.loginUrl)
@@ -97,9 +97,9 @@ npm install node-sass sass-loader --save
   //   }
   // }
 
+```
 
-
-
+```
     mounted () {
     // 一进来看看用户是否授权过
     this.getSetting()
@@ -164,3 +164,4 @@ npm install node-sass sass-loader --save
       })
     }
   },
+```
