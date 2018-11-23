@@ -1,0 +1,36 @@
+{
+  "pages": [
+    "pages/Me/main",
+    "pages/Comments/main",
+    "pages/Books/main"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#EA5149",
+    "navigationBarTitleText": "蜗牛图书",
+    "navigationBarTextStyle": "light"
+  },
+  "tabBar": {
+    "selectedColor": "#AE2455",
+    "list": [
+      {
+        "text": "「每日新闻」",
+        "iconPath": "static/img/book.png",
+        "pagePath": "pages/Comments/main",
+        "selectedIconPath": "static/img/book-active.png"
+      },
+      {
+        "text": "「图书列表」",
+        "iconPath": "static/img/todo.png",
+        "pagePath": "pages/Books/main",
+        "selectedIconPath": "static/img/todo-active.png"
+      },
+      {
+        "text": "「我的主页」",
+        "iconPath": "static/img/me.png",
+        "pagePath": "pages/Me/main",
+        "selectedIconPath": "static/img/me-active.png"
+      }
+    ]
+  }
+}
