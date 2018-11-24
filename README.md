@@ -29,139 +29,65 @@ npm install wafer2-client-sdk --save
 npm install node-sass sass-loader --save 
 ```
 
-  // async created () {
-    // qcloud.setLoginUrl(config.loginUrl)
-    // qcloud.login({
-    //   success: function (userInfo) {
-    //     console.log('登录成功', userInfo)
-    //     wx.setStorageSync('userInfo', userInfo)
-    //   },
-    //   fail: function (err) {
-    //     console.log('登录失败', err)
-    //   }
-    // })
-    // const res = await get('/weapp/demo')
-    // console.log(123, res)
-    // wx.request({
-    //   url: config.host + '/weapp/demo',
-    //   success: function (res) {
-    //     console.log(res)
-    //   }
-    // })
-  // console.log('小程序启动了')
-  // }
-
-    // mounted () {
-  //   // 一进来看看用户是否授权过
-  //   this.getSetting()
-  // },
-  // methods: {
-  //   scanBook: function () {},
-  //   getSetting () {
-  //     wx.getSetting({
-  //       success: function (res) {
-  //         if (res.authSetting['scope.userInfo']) {
-  //           wx.getUserInfo({
-  //             success: function (res) {
-  //               console.log(res.userInfo)
-  //               // 用户已经授权过
-  //               console.log('用户已经授权过')
-  //             }
-  //           })
-  //         } else {
-  //           console.log('用户还未授权过')
-  //         }
-  //       }
-  //     })
-  //   },
-  //   getUserInfo1 () {
-  //     console.log('click事件首先触发')
-  //     // 判断小程序的API，回调，参数，组件等是否在当前版本可用。
-  //     // 为false 提醒用户升级微信版本
-  //     // console.log(wx.canIUse('button.open-type.getUserInfo'))
-  //     if (wx.canIUse('button.open-type.getUserInfo')) {
-  //       // 用户版本可用
-  //     } else {
-  //       console.log('请升级微信版本')
-  //     }
-  //   },
-  //   bindGetUserInfo (e) {
-  //     // console.log(e.mp.detail.rawData)
-  //     if (e.mp.detail.rawData) {
-  //       // 用户按了允许授权按钮
-  //       console.log('用户按了允许授权按钮')
-  //     } else {
-  //       // 用户按了拒绝按钮
-  //       console.log('用户按了拒绝按钮')
-  //     }
-  //   }
-  // }
-
-```
-
-```
-    mounted () {
-    // 一进来看看用户是否授权过
-    this.getSetting()
-  },
-  methods: {
+    /* isbn: 书的编号 */
+    /* 发请求, async 封装 */
+    async addBook (isbn) {
+      console.log('isbn', isbn)
+      /* 传递给 server/controllers/addbook.js */
+      const res = await post('/weapp/addbook', {
+        isbn
+        // openid: this.userinfo.openId
+      })
+      if (res.code === 0 && res.data.title) {
+        showSuccess('添加成功', `${res.data.title}添加成功`)
+      }
+    },
+    scanBook: function () {
+      /* [scanCode](https://developers.weixin.qq.com/miniprogram/dev/api/device/scan/wx.scanCode.html) */
+      wx.scanCode({
+        success: (res) => {
+          if (res.result) {
+            // console.log('res', res)
+            this.addBook(res.result)
+          }
+        }
+      })
+    },
     getSetting () {
       wx.getSetting({
         success: function (res) {
           if (res.authSetting['scope.userInfo']) {
             wx.getUserInfo({
               success: function (res) {
-                console.log(res.userInfo)
+                console.log('res.userInfo', res.userInfo)
                 // 用户已经授权过
                 console.log('用户已经授权过')
-                // 写入缓存
-                wx.setStorageSync('userInfo', res.userInfo)
-                this.userMessage = wx.getStorageSync('userInfo')
-                console.log(res.userInfo.nickName)
-                console.log(res.userInfo.avatarUrl)
               }
             })
           } else {
             console.log('用户还未授权过')
-            wx.setStorageSync('userInfo', res.userInfo)
-            console.log(res.userInfo)
-            // this.userMessage = wx.getStorageSync('userInfo')
           }
         }
       })
     },
-    login () {
-      let user = wx.getStorageSync('userInfo')
-      console.log('click事件首先触发')
-      // 判断小程序的API，回调，参数，组件等是否在当前版本可用。
-      // 为false 提醒用户升级微信版本
-      // console.log(wx.canIUse('button.open-type.getUserInfo'))
-      if (wx.canIUse('button.open-type.getUserInfo')) {
-        // 用户版本可用
-        console.log('用户版本可用')
-      } else {
-        console.log('请升级微信版本')
-      }
-    },
-    bindGetUserInfo (res) {
-      // console.log(e.mp.detail.rawData)
-      if (res.mp.detail.rawData) {
+    bindGetUserInfo (userInfo) {
+      // console.log(res.mp.detail.rawData)
+      if (userInfo) {
         // 用户按了允许授权按钮
         console.log('用户按了允许授权按钮')
-        showSuccess('登录成功')
-        // wx.setStorageSync('userInfo', res.userInfo)
-        // this.userMessage = wx.getStorageSync('userInfo')
+        // 存入缓存
+        wx.setStorageSync('userinfo', userInfo.mp.detail.userInfo)
+        // wx.setStorageSync('userInfo', userRes.data.data)
+        // 读取缓存
+        this.userinfo = wx.getStorageSync('userinfo')
+        console.log('userinfo', this.userinfo)
+        console.log('data', userInfo)
+        // console.log(userInfo.mp.detail.userInfo)
       } else {
         // 用户按了拒绝按钮
         console.log('用户按了拒绝按钮')
       }
-    },
-    scanBook: function () {
-      wx.scanCode({
-        success: (res) => {
-          console.log(res)
-        }
-      })
     }
-  },
+  }
+
 ```

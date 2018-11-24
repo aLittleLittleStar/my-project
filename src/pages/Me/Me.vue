@@ -1,124 +1,151 @@
 <template>
   <div class="container">
-    <button 
-     open-type="getUserInfo"
-     @getuserinfo="bindGetUserInfo" 
-     @click="getUserInfo1">获取权限</button>
     <div 
-      class="userInfo">
-      <img 
-        :src="userMessage.avatarUrl"
-        class="userImg" />
-      <p class="other">{{userMessage.nickName}}</p>
+      class="userinfo" 
+      @click='login'>
+      <img  
+        class="userinfo-avatar" 
+        :src="userinfo.avatarUrl" 
+        alt="">
+      <p class="userinfo-nickname">{{userinfo.nickName}}</p>
     </div>
     <YearProgress></YearProgress>
-    <button
-      @click="scanBook"
-      class="btn">添加图书</button>
+    <button 
+      v-if="userinfo.city" 
+      @click='scanBook' 
+      class='btn' >
+      添加图书
+    </button>
+    <button 
+      class='btn'
+      v-else
+      lang="zh_CN"
+      open-type="getUserInfo" 
+      @getuserinfo="bindGetUserInfo">点击登录</button>
+
   </div>
 </template>
 
 <script>
 import YearProgress from '@/components/YearProgress'
-// import { showSuccess } from '../../utils'
-// import qcloud from 'wafer2-client-sdk'
-// import config from '../../config.js'
+import { showSuccess, post, showModal } from '../../utils'
+import qcloud from 'wafer2-client-sdk'
+import config from '../../config'
 
 export default {
+  components: {
+    YearProgress
+  },
   data () {
     return {
-      userMessage: {
+      userinfo: {
         // 设置默认[没有登录的]头像
-        avatarUrl: '../../../static/img/unlogin.png',
-        nickName: '点击登录'
+        avatarUrl: 'http://image.shengxinjing.cn/rate/unlogin.png',
+        nickName: '未登录'
       }
     }
   },
-  created () {
-    // this.userMessage = wx.getStorageSync('userInfo')
-    // console.log(this.userMessage)
-  },
-  mounted () {
-    // 一进来看看用户是否授权过
-    this.getSetting()
+  /* 跳转到该页面就自动执行, onShow 是微信 API 的生命周期 */
+  onShow () {
+    let userInfo = wx.getStorageSync('userInfo')
+    if (userInfo) {
+      this.userInfo = userInfo
+    }
+    // console.log(this.userInfo)
   },
   methods: {
-    scanBook: function () {
+    scanBook () {
+      /* [scanCode](https://developers.weixin.qq.com/miniprogram/dev/api/device/scan/wx.scanCode.html) */
       wx.scanCode({
-        success: (res) => {
-          console.log(res)
-        }
-      })
-    },
-    getSetting () {
-      wx.getSetting({
-        success: function (res) {
-          if (res.authSetting['scope.userInfo']) {
-            wx.getUserInfo({
-              success: function (res) {
-                console.log(res.userInfo)
-                // 用户已经授权过
-                console.log('用户已经授权过')
-                // 写入缓存
-                wx.setStorageSync('userInfo', res.userInfo)
-                this.userMessage = wx.getStorageSync('userInfo')
-                console.log(res.userInfo.nickName)
-                console.log(res.userInfo.avatarUrl)
-              }
-            })
-          } else {
-            console.log('用户还未授权过')
+        success: res => {
+          if (res.result) {
+            // console.log(res)
+            this.addBook(res.result)
           }
         }
       })
     },
-    getUserInfo1 () {
-      console.log('click事件首先触发')
-      // 判断小程序的API，回调，参数，组件等是否在当前版本可用。
-      // 为false 提醒用户升级微信版本
-      // console.log(wx.canIUse('button.open-type.getUserInfo'))
-      if (wx.canIUse('button.open-type.getUserInfo')) {
-        // 用户版本可用
-      } else {
-        console.log('请升级微信版本')
-      }
+    /* isbn: 书的编号 */
+    /* 发请求, async 封装 */
+    async addBook (isbn) {
+      // console.log(isbn)
+      /* 传递给 server/controllers/addbook.js */
+      const res = await post('/weapp/addbook', {
+        isbn,
+        openid: this.userInfo.openId
+      })
+      showModal('添加成功', `${res.title}添加成功`)
     },
-    bindGetUserInfo (e) {
-      // console.log(e.mp.detail.rawData)
-      if (e.mp.detail.rawData) {
-        // 用户按了允许授权按钮
-        console.log('用户按了允许授权按钮')
-        // showSuccess('登录成功')
-      } else {
-        // 用户按了拒绝按钮
-        console.log('用户按了拒绝按钮')
+    doLogin () {
+      /* [qcloud 获取用户信息 wafer2-client-sdk](https://github.com/tencentyun/wafer-client-sdk/) */
+      /* [getStorageSync 获取缓存数据](https://developers.weixin.qq.com/miniprogram/dev/api/storage/wx.getStorageSync.html) */
+      let user = wx.getStorageSync('userInfo')
+      if (!user) {
+        if (user) {
+          // 第二次登录
+          // 或者本地已经有登录态
+          // 可使用本函数更新登录态
+          qcloud.loginWithCode({
+            success: res => {
+              qcloud.request({
+                /* 想要使用 optionId 要请求 server/routes/index.js/用户信息接口 */
+                url: config.userUrl,
+                login: true,
+                success: userRes => {
+                  console.log(userRes)
+                  /* [setStorageSync 数据缓存](https://developers.weixin.qq.com/miniprogram/dev/api/storage/wx.setStorageSync.html) */
+                  wx.setStorageSync('userInfo', userRes.data.data)
+                  this.userInfo = userRes.data.data
+                  showSuccess('登录成功')
+                }
+              })
+            },
+            fail: err => {
+              console.log('第二次登录失败', err)
+            }
+          })
+        } else {
+          // 首次登录
+          qcloud.setLoginUrl(config.loginUrl)
+          qcloud.login({
+            success: res => {
+              qcloud.request({
+                /* 想要使用 optionId 要请求 server/routes/index.js/用户信息接口 */
+                url: config.userUrl,
+                login: true,
+                success: userRes => {
+                  console.log(userRes)
+                  /* [setStorageSync 数据缓存](https://developers.weixin.qq.com/miniprogram/dev/api/storage/wx.setStorageSync.html) */
+                  wx.setStorageSync('userInfo', userRes.data.data)
+                  this.userInfo = userRes.data.data
+                  showSuccess('登录成功')
+                }
+              })
+            },
+            fail: err => {
+              console.log('登录失败', err)
+            }
+          })
+        }
       }
     }
-  },
-  components: {
-    YearProgress
   }
 }
 </script>
+
 <style lang="scss">
 .container{
-  padding:150 30rpx;
-  .userInfo{
-    margin-top:150rpx;
-    text-align:center;
-    .userImg{
-      position: absolute;
-      top: 15%;
-      left: 280rpx;
-      width: 150rpx;
-      height:150rpx;
-      margin: 20rpx;
-      border-radius: 50%;
-      overflow: hidden;
-    }
-    p{
-     padding-top: 140rpx;
-    }
+  padding:0 30rpx;
+}  
+.userinfo{
+  margin-top:100rpx;
+  text-align:center;
+  img{
+    width: 150rpx;
+    height:150rpx;
+    margin: 20rpx;
+    border-radius: 50%;
   }
 }
+
 </style>
