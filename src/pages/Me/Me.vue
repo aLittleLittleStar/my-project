@@ -1,124 +1,124 @@
 <template>
   <div class="container">
-    <button 
-     open-type="getUserInfo"
-     @getuserinfo="bindGetUserInfo" 
-     @click="getUserInfo1">获取权限</button>
-    <div 
-      class="userInfo">
-      <img 
-        :src="userMessage.avatarUrl"
-        class="userImg" />
-      <p class="other">{{userMessage.nickName}}</p>
+    <div class="userinfo">
+      <img :src="userInfo.avatarUrl"/>
+      <p class="other">{{userInfo.nickName}}</p>
     </div>
     <YearProgress></YearProgress>
     <button
+      v-if="userInfo.city"
       @click="scanBook"
       class="btn">添加图书</button>
+    <button 
+      v-else 
+      open-type="getUserInfo" 
+      lang="zh_CN" 
+      class='btn' 
+      @getuserinfo="getUserInfo">点击登录</button>
   </div>
 </template>
 
 <script>
 import YearProgress from '@/components/YearProgress'
-// import { showSuccess } from '../../utils'
-// import qcloud from 'wafer2-client-sdk'
-// import config from '../../config.js'
+import { post, showModal } from '../../utils'
+import qcloud from 'wafer2-client-sdk'
+import config from '../../config.js'
 
 export default {
   data () {
     return {
-      userMessage: {
+      userInfo: {
         // 设置默认[没有登录的]头像
-        avatarUrl: '../../../static/img/unlogin.png',
-        nickName: '点击登录'
-      }
-    }
-  },
-  created () {
-    // this.userMessage = wx.getStorageSync('userInfo')
-    // console.log(this.userMessage)
-  },
-  mounted () {
-    // 一进来看看用户是否授权过
-    this.getSetting()
-  },
-  methods: {
-    scanBook: function () {
-      wx.scanCode({
-        success: (res) => {
-          console.log(res)
-        }
-      })
-    },
-    getSetting () {
-      wx.getSetting({
-        success: function (res) {
-          if (res.authSetting['scope.userInfo']) {
-            wx.getUserInfo({
-              success: function (res) {
-                console.log(res.userInfo)
-                // 用户已经授权过
-                console.log('用户已经授权过')
-                // 写入缓存
-                wx.setStorageSync('userInfo', res.userInfo)
-                this.userMessage = wx.getStorageSync('userInfo')
-                console.log(res.userInfo.nickName)
-                console.log(res.userInfo.avatarUrl)
-              }
-            })
-          } else {
-            console.log('用户还未授权过')
-          }
-        }
-      })
-    },
-    getUserInfo1 () {
-      console.log('click事件首先触发')
-      // 判断小程序的API，回调，参数，组件等是否在当前版本可用。
-      // 为false 提醒用户升级微信版本
-      // console.log(wx.canIUse('button.open-type.getUserInfo'))
-      if (wx.canIUse('button.open-type.getUserInfo')) {
-        // 用户版本可用
-      } else {
-        console.log('请升级微信版本')
-      }
-    },
-    bindGetUserInfo (e) {
-      // console.log(e.mp.detail.rawData)
-      if (e.mp.detail.rawData) {
-        // 用户按了允许授权按钮
-        console.log('用户按了允许授权按钮')
-        // showSuccess('登录成功')
-      } else {
-        // 用户按了拒绝按钮
-        console.log('用户按了拒绝按钮')
+        avatarUrl: 'http://image.shengxinjing.cn/rate/unlogin.png',
+        nickName: '未登录'
       }
     }
   },
   components: {
     YearProgress
+  },
+  methods: {
+    async addBook (isbn) {
+      console.log('isbn', isbn)
+      const res = await post('/weapp/addbook', {
+        isbn,
+        openid: this.userInfo.openId
+      })
+      showModal('添加成功', `${res.title}添加成功`)
+      // console.log('res', res)
+      console.log('res.data.title', res.data.title)
+      // if (res.code === 0 && res.data.title) {
+      //   showSuccess('添加成功', `${res.data.title}添加成功`)
+      // }
+    },
+    scanBook: function () {
+      wx.scanCode({
+        success: (res) => {
+          this.addBook(res.result)
+          // console.log(res)
+        }
+      })
+    },
+    login () {
+      console.log('触发')
+      qcloud.setLoginUrl(config.loginUrl)
+      const session = qcloud.Session.get()
+      console.log('session', session)
+      if (session) {
+        // 第二次登录
+        // 或者本地已经有登录态
+        // 可使用本函数更新登录态
+        qcloud.loginWithCode({
+          success: res => {
+            this.setData({ userInfo: res, logged: true })
+            console.log('res', res)
+          },
+          fail: err => {
+            console.error('222', err)
+          }
+        })
+      } else {
+        // 首次登录
+        qcloud.login({
+          success: res => {
+            this.setData({ userInfo: res, logged: true })
+            // console.log('res', res)
+          },
+          fail: err => {
+            console.log(err)
+          }
+        })
+      }
+    },
+    getUserInfo (e) {
+      console.log('e.mp.detail.userInfo', e.mp.detail.userInfo)
+      // 写入缓存
+      wx.setStorageSync('userInfo', e.mp.detail.userInfo)
+      // 拿取数据
+      this.userInfo = e.mp.detail.userInfo
+    }
+  },
+  onShow () {
+    wx.showShareMenu()
+    let userinfo = wx.getStorageSync('userinfo')
+    if (userinfo) {
+      this.userinfo = userinfo
+    }
   }
 }
 </script>
 <style lang="scss">
 .container{
-  padding:150 30rpx;
-  .userInfo{
-    margin-top:150rpx;
-    text-align:center;
-    .userImg{
-      position: absolute;
-      top: 15%;
-      left: 280rpx;
-      width: 150rpx;
-      height:150rpx;
-      margin: 20rpx;
-      border-radius: 50%;
-      overflow: hidden;
-    }
-    p{
-     padding-top: 140rpx;
-    }
+  padding:0 30rpx;
+}
+.userinfo{
+  margin-top:100rpx;
+  text-align:center;
+  img{
+    width: 150rpx;
+    height:150rpx;
+    margin: 20rpx;
+    border-radius: 50%;
   }
 }
 </style>
