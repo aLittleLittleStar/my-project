@@ -2,7 +2,7 @@
 * @Author: Star
 * @Date:   2018-11-17 16:50:04
 * @Last Modified by:   Star
-* @Last Modified time: 2018-11-24 18:12:41
+* @Last Modified time: 2018-11-26 17:03:51
 */
 import config from './config'
 
@@ -26,6 +26,7 @@ function request (url, method, data) {
         if (res.data.code === 0) {
           resolve(res.data.data)
         } else {
+          showModal('失败', res.data.data.msg)
           reject(res.data)
         }
       }
@@ -40,7 +41,6 @@ export function showModal (title, content) {
     showCancel: false
   })
 }
-
 export function showSuccess (text) {
   /* [showToast](https://developers.weixin.qq.com/miniprogram/dev/api/ui/interaction/wx.showToast.html) */
   wx.showToast({
