@@ -12,7 +12,7 @@
  File Encoding         : utf-8
 
  Date: 08/10/2017 22:22:52 PM
-*/
+*/user
 
 SET NAMES utf8;
 SET FOREIGN_KEY_CHECKS = 0;
