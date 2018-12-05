@@ -65,7 +65,10 @@ export default {
         // 下拉刷新，不能直接覆盖books ， 而是累加
         this.books = this.concat(books.list)
       }
+      // 隐藏加载中菊花动画
       wx.hideNavigationBarLoading()
+      // 停止下拉状态
+      wx.stopPullDownRefresh()
     },
     async getTop () {
       const tops = await get('/weapp/top')

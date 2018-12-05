@@ -3,7 +3,7 @@
 </template>
 
 <script>
-// import { get } from '../../utils'
+import { get } from '../../utils'
 export default {
   data () {
     return {
@@ -12,9 +12,10 @@ export default {
   },
   methods: {
     async getDetail () {
-      // const info = await get('/weapp/bookdetail', {
-      // id: this.bookid
-      // })
+      const info = await get('/weapp/bookdetail', {
+        id: this.bookid
+      })
+      return info
     }
   },
   mounted () {
